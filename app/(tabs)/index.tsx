@@ -1,30 +1,57 @@
 import { Button, StyleSheet } from 'react-native';
 
-import { View } from '@/components/Themed';
-import { useEffect } from 'react';
-
+import { Text, View } from '@/components/Themed';
+import React, { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
+import { EventSubscription } from 'expo-notifications';
 
 export default function TabOneScreen() {
+  const notificationListener = useRef<EventSubscription>();
+  const responseListener = useRef<EventSubscription>();
+
   useEffect(() => {
     Notifications.requestPermissionsAsync({
       ios: {
         allowAlert: true,
         allowBadge: true,
         allowSound: true,
+        // allowAnnouncements: true,
       },
-    }).then((status) => console.log('PERM:', JSON.stringify(status, null, 4)));
+    }).then((status) => {
+      console.log('PERM: ', status);
+    });
+
+    // Received notification while app is in foreground
+    // notificationListener.current = Notifications.addNotificationReceivedListener(async (notification) => {
+    //   const count = await Notifications.getBadgeCountAsync();
+    //   await Notifications.setBadgeCountAsync(count + 1);
+    // });
+
+    // // // Tap on notification to open app
+    // responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+    //   console.log('RESPONSE: ', response);
+    //   Notifications.dismissAllNotificationsAsync();
+    //   Notifications.setBadgeCountAsync(0);
+    //   // alert(response.notification.request.content.data.data);
+    // });
+
+    return () => {
+      Notifications.removeNotificationSubscription(
+        notificationListener.current!
+      );
+      Notifications.removeNotificationSubscription(responseListener.current!);
+    };
   }, []);
 
   const scheduleNotifications = async () => {
-    console.log('scheduleNotifications function');
-
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "You've got mail! 📬",
-        body: 'Open the notification to read them all',
-        sound: 'email_sound.wav', // <- for Android below 8.0
+        body: 'Here is the notification body',
+        data: { data: 'secret message' },
       },
+      // trigger: { seconds: 2 },
+
       trigger: {
         seconds: 2,
         channelId: 'new_emails', // <- for Android 8.0+, see definition above
@@ -34,7 +61,7 @@ export default function TabOneScreen() {
 
   return (
     <View style={styles.container}>
-      <Button title="Schedule" onPress={scheduleNotifications} />
+      <Button title="Schedule Notifications" onPress={scheduleNotifications} />
     </View>
   );
 }
